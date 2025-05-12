@@ -9,7 +9,8 @@ from visualizations import (
     plot_last_day_volatility,
     plot_momentum_analysis,
     plot_volatility_vs_return,
-    plot_sharpe_ratio
+    plot_sharpe_ratio,
+    plot_price_drawdown
 )
 
 # Sayfa konfigürasyonu
@@ -48,7 +49,7 @@ if st.sidebar.button("Verileri Yenile"):
 page = st.sidebar.radio(
     "Gösterge Seçimi", 
     ["Tüm Analizler", "En Oynak Hisseler", "Isı Haritası", "Son Gün Oynaklık", 
-     "Momentum Analizi", "Oynaklık vs Getiri", "Risk-Getiri Analizi"]
+     "Momentum Analizi", "Oynaklık vs Getiri", "Risk-Getiri Analizi", "Zirveden Uzaklık"]
 )
 
 # Veri yükleme
@@ -112,6 +113,20 @@ if page == "Tüm Analizler" or page == "Risk-Getiri Analizi":
     fig6, info_text6 = plot_sharpe_ratio(cv_data, all_data, periods=window_size)
     st.info(info_text6)
     st.plotly_chart(fig6, use_container_width=True)
+
+if page == "Tüm Analizler" or page == "Zirveden Uzaklık":
+    st.header("Zirveden Uzaklık Analizi")
+    
+    # Hisse seçimi
+    selected_stock = st.selectbox(
+        "Hisse Senedi Seçin", 
+        options=all_data.columns,
+        format_func=lambda x: x.replace('.IS', '')
+    )
+    
+    fig7, info_text7 = plot_price_drawdown(all_data, selected_stock)
+    st.info(info_text7)
+    st.plotly_chart(fig7, use_container_width=True)
 
 # Footer
 st.markdown("---")

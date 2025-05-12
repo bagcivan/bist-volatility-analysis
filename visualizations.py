@@ -5,6 +5,7 @@ import matplotlib.dates as mdates
 import streamlit as st
 import plotly.express as px
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 def format_date(date):
     """Tarihi 'gün/ay/yıl' formatına dönüştürür"""
@@ -174,5 +175,90 @@ def plot_sharpe_ratio(cv_data, all_data, periods=20):
         color=sharpe_like.values,
         color_continuous_scale=['red', 'green']
     )
+    
+    return fig, info_text
+
+def plot_price_drawdown(stock_data, ticker):
+    """Hisse fiyatı ve zirveden uzaklık grafiğini oluşturur"""
+    
+    # Veri hazırlama
+    df = stock_data[[ticker]].copy()
+    df.columns = ['Close']  # Sütun adını standartlaştır
+    
+    # Geri çekilme hesapla
+    df['Peak'] = df['Close'].cummax()
+    df['Drawdown'] = (df['Close'] - df['Peak']) / df['Peak'] * 100
+    
+    first_date = df.index[0]
+    last_date = df.index[-1]
+    
+    info_text = (
+        f"ℹ️ **Zirveden Uzaklık:** Grafiğin üst kısmı hisse fiyatını, alt kısmı ise zirve değerden "
+        f"yüzdesel uzaklığı göstermektedir. Kırmızı çizgiler %10 ve %20 düzeltme seviyelerini belirtir. "
+        f"Bu analiz, hissenin aşırı alım/satım durumlarını ve düzeltmelerin derinliğini görmek için kullanılır."
+    )
+    
+    # Plotly ile iki grafikli figür oluştur
+    fig = go.Figure()
+    
+    # Alt figürleri ayarla
+    fig = make_subplots(rows=2, cols=1, shared_xaxes=True, 
+                      vertical_spacing=0.1, row_heights=[0.7, 0.3])
+    
+    # Üst grafik: Fiyat
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df['Close'],
+            name='Fiyat',
+            line=dict(color='navy')
+        ),
+        row=1, col=1
+    )
+    
+    # Alt grafik: Drawdown
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=df['Drawdown'],
+            name='Zirveden Uzaklık (%)',
+            fill='tozeroy',
+            line=dict(color='red')
+        ),
+        row=2, col=1
+    )
+    
+    # %10 düzeltme çizgisi
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=[-10] * len(df.index),
+            name='%10 Düzeltme',
+            line=dict(color='red', dash='dash')
+        ),
+        row=2, col=1
+    )
+    
+    # %20 ayı piyasası çizgisi
+    fig.add_trace(
+        go.Scatter(
+            x=df.index,
+            y=[-20] * len(df.index),
+            name='%20 Ayı Piyasası',
+            line=dict(color='darkred', dash='dash')
+        ),
+        row=2, col=1
+    )
+    
+    # Grafik başlıkları ve düzeni
+    fig.update_layout(
+        title=f"{ticker} Fiyat ve Zirveden Uzaklık - {format_date(first_date)} ile {format_date(last_date)} arası",
+        showlegend=True,
+        height=600
+    )
+    
+    fig.update_xaxes(title_text="Tarih", row=2, col=1)
+    fig.update_yaxes(title_text="Fiyat", row=1, col=1)
+    fig.update_yaxes(title_text="Uzaklık (%)", row=2, col=1)
     
     return fig, info_text 
