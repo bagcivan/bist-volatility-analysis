@@ -90,8 +90,10 @@ def plot_volatility_heatmap(cv_data):
         ),
         coloraxis=dict(
             colorbar=dict(
-                title="Varyasyon<br>Katsayısı",
-                titleside="right",
+                title=dict(
+                    text="Varyasyon<br>Katsayısı",
+                    side="right"
+                ),
                 ticks="outside"
             )
         )
