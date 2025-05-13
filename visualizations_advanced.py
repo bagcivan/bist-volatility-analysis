@@ -2,19 +2,22 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from theme_constants import (
+from constants import (
     UP_COLOR, DOWN_COLOR, NEUTRAL_COLOR, 
     RETURN_COLOR_SCALE, HEATMAP_COLOR_SCALE,
     TEXT_FONT_SIZE, HOVER_TEXT_COLOR, 
     LINE_WIDTH, GRAPH_HEIGHT,
     BAR_TEXT_FORMAT, PERCENTAGE_FORMAT
 )
-from utils import format_date, apply_figure_template, clean_ticker, clean_ticker_series
+from formatters import format_date, clean_ticker, clean_ticker_series
+from visualization_helpers import apply_figure_template, PlotHelpers
+from data_services import calculate_percent_change, calculate_drawdown
 
 @apply_figure_template
 def plot_return_analysis(all_data, periods=20):
     """Getiri analizi (20 günlük getiri)"""
-    momentum = all_data.pct_change(periods=periods).iloc[-1].sort_values(ascending=False)
+    # Hisse getirilerini hesapla
+    momentum = calculate_percent_change(all_data, periods=periods, sort=True, multiply_by_100=False)
     
     first_date = all_data.index[-periods]
     last_date = all_data.index[-1]
@@ -25,36 +28,26 @@ def plot_return_analysis(all_data, periods=20):
         f"Yeşil pozitif, kırmızı negatif getiriyi gösterir."
     )
     
-    # Hisse kodlarını kısalt
-    hisseler = clean_ticker_series(momentum.index)
-    degerler = momentum.values * 100  # Yüzde olarak göster
+    # Hisse kodlarını temizle ve verileri hazırla
+    hisseler, degerler = PlotHelpers.prepare_stock_data(momentum)
+    degerler = degerler * 100  # Yüzde olarak göster
     
-    # Renk skalası - theme_constants'tan al
-    fig = px.bar(
-        x=hisseler,
-        y=degerler,
-        title=f"En Fazla Yükselen/Düşen Hisseler - {format_date(first_date)} ile {format_date(last_date)} arası",
-        labels={'x': 'Hisseler', 'y': 'Getiri (%)'},
-        color=degerler,
-        color_continuous_scale=RETURN_COLOR_SCALE,
-        text=[PERCENTAGE_FORMAT.format(val) for val in degerler]
+    # Bar grafiği oluştur - PlotHelpers kullanarak
+    title = PlotHelpers.get_date_range_title(
+        first_date, last_date, "En Fazla Yükselen/Düşen Hisseler"
     )
     
-    fig.update_traces(
-        textposition='outside',
-        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
-        hovertemplate='<b>%{x}</b>: %{y:.2f}%<extra></extra>'
+    fig = PlotHelpers.create_bar_chart(
+        x_data=hisseler,
+        y_data=degerler,
+        title=title,
+        y_label='Getiri (%)',
+        color_scale=RETURN_COLOR_SCALE,
+        text_format=PERCENTAGE_FORMAT
     )
     
-    # Y ekseni için 0 çizgisi ekle
-    fig.add_shape(
-        type="line",
-        x0=-0.5,
-        x1=len(hisseler)-0.5,
-        y0=0,
-        y1=0,
-        line=dict(color="#aaaaaa", width=1, dash="dot")
-    )
+    # 0 çizgisi ekle
+    PlotHelpers.add_zero_line(fig, hisseler)
     
     return fig, info_text
 
@@ -63,7 +56,9 @@ def plot_volatility_vs_return(cv_data, all_data, periods=20):
     """Oynaklık ve getiri ilişkisi için scatter plot"""
     last_date = cv_data.index[-1]
     cv_last = cv_data.loc[last_date]
-    returns_last_n = all_data.pct_change(periods=periods).iloc[-1]
+    
+    # Yüzde değişim hesapla
+    returns_last_n = calculate_percent_change(all_data, periods=periods, multiply_by_100=False)
     
     first_date = all_data.index[-periods]
     
@@ -118,9 +113,15 @@ def plot_volatility_vs_return(cv_data, all_data, periods=20):
 @apply_figure_template
 def plot_sharpe_ratio(cv_data, all_data, periods=20):
     """Sharpe benzeri oran (Getiri / Oynaklık)"""
+    # Verileri hazırla
     last_date = cv_data.index[-1]
     cv_last = cv_data.loc[last_date]
-    returns_last_n = all_data.pct_change(periods=periods).iloc[-1]
+    
+    # Yüzde değişim hesapla
+    returns_last_n = calculate_percent_change(all_data, periods=periods, multiply_by_100=False)
+    
+    # Sharpe benzeri oran
+    sharpe_like = (returns_last_n / cv_last).sort_values(ascending=False)
     
     first_date = all_data.index[-periods]
     
@@ -130,38 +131,26 @@ def plot_sharpe_ratio(cv_data, all_data, periods=20):
         f"Yüksek değerler, risk göz önüne alındığında daha iyi performans gösterenleri belirtir."
     )
     
-    # Sharpe benzeri oran
-    sharpe_like = (returns_last_n / cv_last).sort_values(ascending=False)
+    # Hisse kodlarını temizle ve verileri hazırla
+    hisseler, degerler = PlotHelpers.prepare_stock_data(sharpe_like)
     
-    # Hisse kodlarını kısalt
-    hisseler = clean_ticker_series(sharpe_like.index)
-    degerler = sharpe_like.values
-    
-    fig = px.bar(
-        x=hisseler,
-        y=degerler,
-        title=f"Riske Göre Düzeltilmiş Performans - {format_date(first_date)} ile {format_date(last_date)} arası",
-        labels={'x': 'Hisseler', 'y': 'Getiri/Oynaklık Oranı'},
-        color=degerler,
-        color_continuous_scale=RETURN_COLOR_SCALE,
-        text=[BAR_TEXT_FORMAT.format(val) for val in degerler]
+    # Bar grafiği oluştur - PlotHelpers kullanarak
+    title = PlotHelpers.get_date_range_title(
+        first_date, last_date, "Riske Göre Düzeltilmiş Performans"
     )
     
-    fig.update_traces(
-        textposition='outside',
-        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
-        hovertemplate='<b>%{x}</b>: %{y:.4f}<extra></extra>'
+    fig = PlotHelpers.create_bar_chart(
+        x_data=hisseler,
+        y_data=degerler,
+        title=title,
+        y_label='Getiri/Oynaklık Oranı',
+        color_scale=RETURN_COLOR_SCALE,
+        text_format=BAR_TEXT_FORMAT,
+        precision=4
     )
     
-    # Y ekseni için 0 çizgisi ekle
-    fig.add_shape(
-        type="line",
-        x0=-0.5,
-        x1=len(hisseler)-0.5,
-        y0=0,
-        y1=0,
-        line=dict(color="#aaaaaa", width=1, dash="dot")
-    )
+    # 0 çizgisi ekle
+    PlotHelpers.add_zero_line(fig, hisseler)
     
     return fig, info_text
 
@@ -173,9 +162,8 @@ def plot_price_drawdown(stock_data, ticker):
     df = stock_data[[ticker]].copy()
     df.columns = ['Close']  # Sütun adını standartlaştır
     
-    # Geri çekilme hesapla
-    df['Peak'] = df['Close'].cummax()
-    df['Drawdown'] = (df['Close'] - df['Peak']) / df['Peak'] * 100
+    # Zirveden uzaklık hesapla - DrawdownHelper kullanarak
+    df = calculate_drawdown(df)
     
     first_date = df.index[0]
     last_date = df.index[-1]

@@ -1,19 +1,23 @@
 import plotly.express as px
-from theme_constants import (
+from constants import (
     COLOR_SCALE, UP_COLOR, DOWN_COLOR, NEUTRAL_COLOR, 
     HEATMAP_COLOR_SCALE, TEXT_FONT_SIZE, HOVER_TEXT_COLOR,
     LINE_WIDTH, GRAPH_HEIGHT, HEATMAP_HEIGHT
 )
-from utils import (
-    format_date, 
-    apply_figure_template, 
-    clean_ticker, 
-    clean_ticker_series,
-    calculate_percent_change,
+from formatters import (
+    format_date,
     format_gains,
     format_losses,
+    clean_ticker,
+    clean_ticker_series
+)
+from visualization_helpers import apply_figure_template, PlotHelpers
+from data_services import calculate_percent_change
+from ui_components import (
     ProgressBar,
-    MetricCard,
+    MetricCard
+)
+from html_components import (
     StyledDataFrame
 )
 import streamlit as st
@@ -24,6 +28,8 @@ def plot_top_volatile_stocks(cv_data, top_n=5):
     """En oynak hisseleri plotly ile çizdir"""
     last_date = cv_data.index[-1]
     first_date = cv_data.index[0]
+    
+    # Son tarih için en oynak hisseleri bulalım
     top_stocks = cv_data.loc[last_date].sort_values(ascending=False).head(top_n)
     
     # Seçilen hisselerin zaman serileri
@@ -34,20 +40,17 @@ def plot_top_volatile_stocks(cv_data, top_n=5):
         "hesaplanır. Yüksek değerler daha oynak hisseleri gösterir."
     )
     
-    title_text = f"En Oynak {top_n} Hisse - {format_date(first_date)} ile {format_date(last_date)} arası"
-    
-    fig = px.line(
-        df_plot,
-        x=df_plot.index,
-        y=df_plot.columns,
-        title=title_text,
-        color_discrete_sequence=COLOR_SCALE,
-        labels={"value": "Varyasyon Katsayısı", "variable": "Hisse", "x": "Tarih"}
+    # Başlık oluştur
+    title = PlotHelpers.get_date_range_title(
+        first_date, last_date, f"En Oynak {top_n} Hisse"
     )
     
-    fig.update_traces(
-        line=dict(width=LINE_WIDTH),
-        hovertemplate='<b>%{y:.4f}</b><br>%{x|%d.%m.%Y}<extra>%{fullData.name}</extra>'
+    # Çizgi grafiği oluştur - PlotHelpers kullanarak
+    fig = PlotHelpers.create_line_chart(
+        df=df_plot,
+        title=title,
+        y_label="Varyasyon Katsayısı",
+        hover_precision=4
     )
     
     return fig, info_text
@@ -72,12 +75,17 @@ def plot_volatility_heatmap(cv_data):
     # Hisse kodlarını kısalt (IS uzantısını kaldır) - clean_ticker kullanarak
     clean_labels = [clean_ticker(label) for label in sorted_cv_data.columns]
     
+    # Başlık oluştur - PlotHelpers kullanarak
+    title = PlotHelpers.get_date_range_title(
+        first_date, last_date, "Oynaklık Isı Haritası"
+    )
+    
     # Transpose eden heatmap (Sıralanmış hisseleri kullan)
     fig = px.imshow(
         sorted_cv_data.T,
         color_continuous_scale=HEATMAP_COLOR_SCALE,
         labels=dict(x="Tarih", y="Hisseler", color="Varyasyon Katsayısı"),
-        title=f"Oynaklık Isı Haritası - {format_date(first_date)} ile {format_date(last_date)} arası",
+        title=title,
         y=clean_labels
     )
     
@@ -113,24 +121,19 @@ def plot_last_day_volatility(cv_data, window=20):
         f"ortalamaya bölünmesiyle hesaplanır."
     )
     
-    # Hisse kodlarını kısalt - clean_ticker_series kullanarak
-    hisseler = clean_ticker_series(cv_last.index)
-    degerler = cv_last.values
+    # Hisse kodlarını temizle ve verileri hazırla
+    hisseler, degerler = PlotHelpers.prepare_stock_data(cv_last)
     
-    fig = px.bar(
-        x=hisseler,
-        y=degerler,
-        title=f"{format_date(last_date)} İtibarıyla {window} Günlük Varyasyon Katsayıları",
-        labels={'x': 'Hisseler', 'y': 'Varyasyon Katsayısı'},
-        color=degerler,
-        color_continuous_scale=HEATMAP_COLOR_SCALE,
-        text=[f"{val:.4f}" for val in degerler]
-    )
+    # Bar grafiği oluştur - PlotHelpers kullanarak
+    title = f"{format_date(last_date)} İtibarıyla {window} Günlük Varyasyon Katsayıları"
     
-    fig.update_traces(
-        textposition='outside',
-        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
-        hovertemplate='<b>%{x}</b>: %{y:.4f}<extra></extra>'
+    fig = PlotHelpers.create_bar_chart(
+        x_data=hisseler,
+        y_data=degerler,
+        title=title,
+        y_label='Varyasyon Katsayısı',
+        color_scale=HEATMAP_COLOR_SCALE,
+        precision=4
     )
     
     return fig, info_text

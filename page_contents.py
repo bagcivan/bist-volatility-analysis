@@ -12,14 +12,10 @@ from visualizations_advanced import (
     plot_sharpe_ratio,
     plot_price_drawdown
 )
-from utils import (
-    clean_ticker, 
-    calculate_percent_change,
-    extract_page_title,
-    format_last_update,
-    LastUpdateInfo,
-    memoize
-)
+from formatters import clean_ticker
+from data_services import calculate_percent_change
+from utils import memoize, extract_page_title
+from html_components import LastUpdateInfo
 import datetime
 
 # Önbelleğe alınmış fonksiyonlar

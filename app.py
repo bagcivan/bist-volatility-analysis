@@ -1,5 +1,6 @@
 import streamlit as st
-from utils import get_stock_data, calculate_volatility, DEFAULT_TICKERS
+from constants import DEFAULT_TICKERS, DATA_CACHE_TTL
+from data_services import get_stock_data, calculate_volatility
 from ui_components import (
     load_css,
     create_sidebar
@@ -41,13 +42,13 @@ if refresh_btn:
     st.session_state.refresh_data = True
 
 # Veri yükleme fonksiyonları
-@st.cache_data(ttl=3600)  # 1 saat cache
+@st.cache_data(ttl=DATA_CACHE_TTL)  # 1 saat cache
 def fetch_stock_data(tickers, days):
     """Hisse senedi verilerini yükle"""
     with st.spinner('Hisse senedi fiyat verileri yükleniyor... Lütfen bekleyin'):
         return get_stock_data(tickers, days)
 
-@st.cache_data(ttl=3600)  # 1 saat cache
+@st.cache_data(ttl=DATA_CACHE_TTL)  # 1 saat cache
 def compute_volatility(data, window):
     """Varyasyon katsayısını hesapla"""
     with st.spinner('Oynaklık hesaplanıyor... Lütfen bekleyin'):
