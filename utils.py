@@ -2,6 +2,8 @@ from curl_cffi import requests
 import pandas as pd
 import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
+import functools
+from theme_constants import DATE_FORMAT, TIME_FORMAT, DATETIME_FORMAT
 
 # Tarayıcı gibi davranan session oluştur
 session = requests.Session(impersonate="chrome")
@@ -55,6 +57,22 @@ def clean_ticker_series(series):
     """Pandas serisi içindeki hisse kodlarından '.IS' uzantısını temizler"""
     return series.str.replace('.IS', '', regex=False)
 
+# Önbelleğe alma dekoratörü
+def memoize(func):
+    """Fonksiyon sonuçlarını önbelleğe alır"""
+    cache = {}
+    
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # Her parametre dönüştürülebilir olmalı
+        key = str(args) + str(sorted(kwargs.items()))
+        if key not in cache:
+            cache[key] = func(*args, **kwargs)
+        return cache[key]
+    
+    return wrapper
+
+@memoize
 def calculate_percent_change(data, periods=1, sort=False, ascending=False, multiply_by_100=True):
     """
     Veri çerçevesindeki yüzde değişimi hesaplar
@@ -79,10 +97,18 @@ def calculate_percent_change(data, periods=1, sort=False, ascending=False, multi
         
     return changes
 
-# theme_constants'dan taşınan yardımcı fonksiyonlar
+# Tarih formatı fonksiyonları
 def format_date(date):
-    """Tarihi 'gün/ay/yıl' formatına dönüştürür"""
-    return date.strftime('%d/%m/%Y')
+    """Tarihi standart 'gün/ay/yıl' formatına dönüştürür"""
+    return date.strftime(DATE_FORMAT)
+
+def format_time(time):
+    """Saati standart 'saat:dakika' formatına dönüştürür"""
+    return time.strftime(TIME_FORMAT)
+
+def format_datetime(dt):
+    """Tarih ve saati standart formatta gösterir"""
+    return dt.strftime(DATETIME_FORMAT)
 
 def set_figure_template(fig):
     """Grafiklere tutarlı tema uygular"""
@@ -171,113 +197,121 @@ def extract_page_title(page_name):
     """Sayfa adından emoji'yi kaldırarak başlığı çıkarır"""
     return page_name.split(" ", 1)[1] if " " in page_name else page_name
 
-def generate_market_progress_bar(positive_count, negative_count, unchanged_count, total_stocks):
-    """Piyasa durumunu gösteren HTML ilerleme çubuğu oluşturur"""
-    pos_percent = positive_count / total_stocks * 100
-    neg_percent = negative_count / total_stocks * 100
-    unc_percent = unchanged_count / total_stocks * 100
+# HTML Bileşenleri
+class HtmlComponent:
+    """HTML bileşenleri oluşturmak için temel sınıf"""
     
-    segments_html = ""
-    legend_html = ""
+    @staticmethod
+    def create_html(html_content):
+        """HTML içeriğini Streamlit'e güvenle yerleştirmek için yardımcı metod"""
+        import streamlit as st
+        return st.markdown(html_content, unsafe_allow_html=True)
+
+    @staticmethod
+    def render_to_streamlit(html_content):
+        """HTML içeriğini doğrudan Streamlit'e yerleştir"""
+        import streamlit as st
+        st.markdown(html_content, unsafe_allow_html=True)
+
+class ProgressBar(HtmlComponent):
+    """İlerleme çubuğu bileşeni"""
     
-    # Koşullara göre HTML parçalarını oluştur
-    if positive_count > 0:
-        segments_html += f'<div class="progress-segment progress-segment-positive" style="width:{pos_percent}%;">{positive_count}</div>'
-        legend_html += f'<div class="legend-item"><span class="legend-color-positive">■</span> Yükselen (%{pos_percent:.1f})</div>'
-    
-    if unchanged_count > 0:
-        segments_html += f'<div class="progress-segment progress-segment-neutral" style="width:{unc_percent}%;">{unchanged_count}</div>'
-        legend_html += f'<div class="legend-item"><span class="legend-color-neutral">■</span> Değişmeyen (%{unc_percent:.1f})</div>'
-    
-    if negative_count > 0:
-        segments_html += f'<div class="progress-segment progress-segment-negative" style="width:{neg_percent}%;">{negative_count}</div>'
-        legend_html += f'<div class="legend-item"><span class="legend-color-negative">■</span> Düşen (%{neg_percent:.1f})</div>'
-    
-    # Yatay stack bar için HTML döndür
-    return f"""
-    <div class="progress-container">
-        <div class="progress-bar-wrapper">
-            <div class="progress-bar">
-                {segments_html}
+    @staticmethod
+    def create(positive_count, negative_count, unchanged_count, total_stocks):
+        """Piyasa durumunu gösteren HTML ilerleme çubuğu oluşturur"""
+        pos_percent = positive_count / total_stocks * 100
+        neg_percent = negative_count / total_stocks * 100
+        unc_percent = unchanged_count / total_stocks * 100
+        
+        segments_html = ""
+        legend_html = ""
+        
+        # Koşullara göre HTML parçalarını oluştur
+        if positive_count > 0:
+            segments_html += f'<div class="progress-segment progress-segment-positive" style="width:{pos_percent}%;">{positive_count}</div>'
+            legend_html += f'<div class="legend-item"><span class="legend-color-positive">■</span> Yükselen (%{pos_percent:.1f})</div>'
+        
+        if unchanged_count > 0:
+            segments_html += f'<div class="progress-segment progress-segment-neutral" style="width:{unc_percent}%;">{unchanged_count}</div>'
+            legend_html += f'<div class="legend-item"><span class="legend-color-neutral">■</span> Değişmeyen (%{unc_percent:.1f})</div>'
+        
+        if negative_count > 0:
+            segments_html += f'<div class="progress-segment progress-segment-negative" style="width:{neg_percent}%;">{negative_count}</div>'
+            legend_html += f'<div class="legend-item"><span class="legend-color-negative">■</span> Düşen (%{neg_percent:.1f})</div>'
+        
+        # Yatay stack bar için HTML döndür
+        return f"""
+        <div class="progress-container">
+            <div class="progress-bar-wrapper">
+                <div class="progress-bar">
+                    {segments_html}
+                </div>
+            </div>
+            <div class="progress-legend">
+                {legend_html}
             </div>
         </div>
-        <div class="progress-legend">
-            {legend_html}
-        </div>
-    </div>
-    """
+        """
 
-def generate_metric_card(label, value, subtitle, is_percentage=False, value_class=None):
-    """Metrik kartı HTML'i oluşturur
+class MetricCard(HtmlComponent):
+    """Metrik kartı bileşeni"""
     
-    Args:
-        label: Kart başlığı
-        value: Gösterilecek değer
-        subtitle: Alt başlık
-        is_percentage: Değer yüzde olarak gösterilecekse True
-        value_class: Değer için CSS sınıfı (positive, negative veya None)
-    
-    Returns:
-        Metrik kartı HTML'i
-    """
-    # Değere yüzdelik işareti ekle
-    formatted_value = f"%{value:.2f}" if is_percentage else value
-    
-    # CSS sınıfı ekle
-    value_class_str = f" {value_class}" if value_class else ""
-    
-    # HTML döndür
-    return f"""
-    <div class="stCard metric-card">
-        <div class="metric-label">{label}</div>
-        <div class="metric-value{value_class_str}">{formatted_value}</div>
-        <div class="metric-subtitle">{subtitle}</div>
-    </div>
-    """
-
-def create_styled_dataframe(data, title, title_class, formatter_func=None):
-    """Başlık ve biçimlendirilmiş içeriğe sahip bir veri çerçevesi oluşturur
-    
-    Args:
-        data: Pandas DataFrame
-        title: Gösterilecek başlık
-        title_class: Başlık için CSS sınıfı (positive, negative)
-        formatter_func: Özel biçimlendirme fonksiyonu (format_gains, format_losses gibi)
-    
-    Returns:
-        HTML markdown için başlık ve biçimlendirilmiş DataFrame HTML'i
-    """
-    # Başlık HTML'i
-    title_html = f'<p class="list-title list-title-{title_class}">{title}</p>'
-    
-    # DataFrame stil
-    styled_df = data.style
-    
-    # Biçimlendirici fonksiyon varsa uygula
-    if formatter_func and 'Getiri (%)' in data.columns:
-        styled_df = styled_df.format({'Getiri (%)': formatter_func})
-    
-    # Stil ayarlarını uygula ve indeksi gizle
-    styled_df = styled_df.hide(axis="index")
-    
-    # HTML olarak döndür
-    df_html = styled_df.to_html()
-    
-    return title_html, df_html
-
-def format_last_update(last_date, current_time=None):
-    """Son güncelleme bilgisini formatlayan fonksiyon
-    
-    Args:
-        last_date: Son veri tarihi
-        current_time: Geçerli saat bilgisi (None ise şu anki zaman kullanılır)
-    
-    Returns:
-        Son güncelleme bilgisi HTML
-    """
-    if current_time is None:
-        import datetime
-        current_time = datetime.datetime.now()
+    @staticmethod
+    def create(label, value, subtitle, is_percentage=False, value_class=None):
+        """Metrik kartı HTML'i oluşturur"""
+        # Değere yüzdelik işareti ekle
+        formatted_value = f"%{value:.2f}" if is_percentage else value
         
-    update_time = f"{last_date.strftime('%d.%m.%Y')} {current_time.strftime('%H:%M')}"
-    return f'<div class="last-update">Son güncelleme: {update_time}</div>' 
+        # CSS sınıfı ekle
+        value_class_str = f" {value_class}" if value_class else ""
+        
+        # HTML döndür
+        return f"""
+        <div class="stCard metric-card">
+            <div class="metric-label">{label}</div>
+            <div class="metric-value{value_class_str}">{formatted_value}</div>
+            <div class="metric-subtitle">{subtitle}</div>
+        </div>
+        """
+
+class StyledDataFrame(HtmlComponent):
+    """Biçimlendirilmiş veri çerçevesi bileşeni"""
+    
+    @staticmethod
+    def create(data, title, title_class, formatter_func=None):
+        """Başlık ve biçimlendirilmiş içeriğe sahip bir veri çerçevesi oluşturur"""
+        # Başlık HTML'i
+        title_html = f'<p class="list-title list-title-{title_class}">{title}</p>'
+        
+        # DataFrame stil
+        styled_df = data.style
+        
+        # Biçimlendirici fonksiyon varsa uygula
+        if formatter_func and 'Getiri (%)' in data.columns:
+            styled_df = styled_df.format({'Getiri (%)': formatter_func})
+        
+        # Stil ayarlarını uygula ve indeksi gizle
+        styled_df = styled_df.hide(axis="index")
+        
+        # HTML olarak döndür
+        df_html = styled_df.to_html()
+        
+        return title_html, df_html
+
+class LastUpdateInfo(HtmlComponent):
+    """Son güncelleme bilgisi bileşeni"""
+    
+    @staticmethod
+    def create(last_date, current_time=None):
+        """Son güncelleme bilgisini formatlayan fonksiyon"""
+        if current_time is None:
+            current_time = datetime.datetime.now()
+            
+        update_time = format_datetime(current_time.replace(year=last_date.year, month=last_date.month, day=last_date.day))
+        return f'<div class="last-update">Son güncelleme: {update_time}</div>'
+
+# Geriye dönük uyumluluk için fonksiyonları koru
+generate_market_progress_bar = ProgressBar.create
+generate_metric_card = MetricCard.create
+create_styled_dataframe = StyledDataFrame.create
+format_last_update = LastUpdateInfo.create 

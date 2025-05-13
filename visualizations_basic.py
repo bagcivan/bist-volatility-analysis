@@ -1,5 +1,9 @@
 import plotly.express as px
-from theme_constants import COLOR_SCALE
+from theme_constants import (
+    COLOR_SCALE, UP_COLOR, DOWN_COLOR, NEUTRAL_COLOR, 
+    HEATMAP_COLOR_SCALE, TEXT_FONT_SIZE, HOVER_TEXT_COLOR,
+    LINE_WIDTH, GRAPH_HEIGHT, HEATMAP_HEIGHT
+)
 from utils import (
     format_date, 
     apply_figure_template, 
@@ -8,9 +12,9 @@ from utils import (
     calculate_percent_change,
     format_gains,
     format_losses,
-    generate_market_progress_bar,
-    generate_metric_card,
-    create_styled_dataframe
+    ProgressBar,
+    MetricCard,
+    StyledDataFrame
 )
 import streamlit as st
 import pandas as pd
@@ -42,7 +46,7 @@ def plot_top_volatile_stocks(cv_data, top_n=5):
     )
     
     fig.update_traces(
-        line=dict(width=2),
+        line=dict(width=LINE_WIDTH),
         hovertemplate='<b>%{y:.4f}</b><br>%{x|%d.%m.%Y}<extra>%{fullData.name}</extra>'
     )
     
@@ -71,14 +75,14 @@ def plot_volatility_heatmap(cv_data):
     # Transpose eden heatmap (Sıralanmış hisseleri kullan)
     fig = px.imshow(
         sorted_cv_data.T,
-        color_continuous_scale='Viridis',
+        color_continuous_scale=HEATMAP_COLOR_SCALE,
         labels=dict(x="Tarih", y="Hisseler", color="Varyasyon Katsayısı"),
         title=f"Oynaklık Isı Haritası - {format_date(first_date)} ile {format_date(last_date)} arası",
         y=clean_labels
     )
     
     fig.update_layout(
-        height=650,
+        height=HEATMAP_HEIGHT,
         xaxis=dict(
             tickmode='array',
             tickvals=list(range(0, len(sorted_cv_data.index), max(1, len(sorted_cv_data.index)//8))),
@@ -117,13 +121,13 @@ def plot_last_day_volatility(cv_data, window=20):
         title=f"{format_date(last_date)} İtibarıyla {window} Günlük Varyasyon Katsayıları",
         labels={'x': 'Hisseler', 'y': 'Varyasyon Katsayısı'},
         color=degerler,
-        color_continuous_scale='Viridis',
+        color_continuous_scale=HEATMAP_COLOR_SCALE,
         text=[f"{val:.4f}" for val in degerler]
     )
     
     fig.update_traces(
         textposition='outside',
-        textfont=dict(size=9, color="#333"),
+        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
         hovertemplate='<b>%{x}</b>: %{y:.4f}<extra></extra>'
     )
     
@@ -148,7 +152,7 @@ def plot_market_summary(all_data, cv_data):
     
     # Yükselen/düşen hisseleri yatay stack bar olarak göster
     # Yatay stack bar için HTML oluştur
-    progress_bar_html = generate_market_progress_bar(
+    progress_bar_html = ProgressBar.create(
         positive_count, negative_count, unchanged_count, total_stocks
     )
     st.markdown(progress_bar_html, unsafe_allow_html=True)
@@ -161,7 +165,7 @@ def plot_market_summary(all_data, cv_data):
         max_gain = daily_change.max()
         max_gain_stock = clean_ticker(daily_change.idxmax())
         st.markdown(
-            generate_metric_card(
+            MetricCard.create(
                 "En Büyük Yükseliş", 
                 max_gain, 
                 max_gain_stock, 
@@ -176,7 +180,7 @@ def plot_market_summary(all_data, cv_data):
         max_loss = daily_change.min()
         max_loss_stock = clean_ticker(daily_change.idxmin())
         st.markdown(
-            generate_metric_card(
+            MetricCard.create(
                 "En Büyük Düşüş", 
                 max_loss, 
                 max_loss_stock, 
@@ -191,7 +195,7 @@ def plot_market_summary(all_data, cv_data):
         avg_change = daily_change.mean()
         direction = "Yükseliş" if avg_change > 0 else "Düşüş"
         st.markdown(
-            generate_metric_card(
+            MetricCard.create(
                 "Ortalama Değişim", 
                 avg_change, 
                 f"Genel Eğilim: {direction}", 
@@ -206,7 +210,7 @@ def plot_market_summary(all_data, cv_data):
         max_vol = cv_data.iloc[-1].max()
         max_vol_stock = clean_ticker(cv_data.iloc[-1].idxmax())
         st.markdown(
-            generate_metric_card(
+            MetricCard.create(
                 "En Oynak Hisse", 
                 max_vol_stock, 
                 f"Varyasyon: {max_vol:.4f}", 
@@ -232,7 +236,7 @@ def plot_market_summary(all_data, cv_data):
         })
         
         # Styled dataframe oluştur
-        title_html, df_html = create_styled_dataframe(
+        title_html, df_html = StyledDataFrame.create(
             gainers_df, 
             "📈 En Çok Yükselenler", 
             "positive", 
@@ -250,7 +254,7 @@ def plot_market_summary(all_data, cv_data):
         })
         
         # Styled dataframe oluştur
-        title_html, df_html = create_styled_dataframe(
+        title_html, df_html = StyledDataFrame.create(
             losers_df, 
             "📉 En Çok Düşenler", 
             "negative", 
@@ -265,8 +269,8 @@ def plot_market_summary(all_data, cv_data):
         f"ℹ️ **Piyasa Özeti:** Seçilen hisseler arasında {positive_count} adet yükselen (%{positive_count/total_stocks*100:.1f}), "
         f"{negative_count} adet düşen (%{negative_count/total_stocks*100:.1f}) ve "
         f"{unchanged_count} adet değişmeyen (%{unchanged_count/total_stocks*100:.1f}) hisse bulunmaktadır.\n\n"
-        f"En yüksek getiri: **{top_gainers.index[0].replace('.IS', '')}** (%{top_gainers.values[0]:.2f})\n\n"
-        f"En düşük getiri: **{top_losers.index[0].replace('.IS', '')}** (%{top_losers.values[0]:.2f})"
+        f"En yüksek getiri: **{clean_ticker(top_gainers.index[0])}** (%{top_gainers.values[0]:.2f})\n\n"
+        f"En düşük getiri: **{clean_ticker(top_losers.index[0])}** (%{top_losers.values[0]:.2f})"
     )
     
     return info_text

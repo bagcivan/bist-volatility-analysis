@@ -2,7 +2,13 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-from theme_constants import UP_COLOR, DOWN_COLOR, NEUTRAL_COLOR
+from theme_constants import (
+    UP_COLOR, DOWN_COLOR, NEUTRAL_COLOR, 
+    RETURN_COLOR_SCALE, HEATMAP_COLOR_SCALE,
+    TEXT_FONT_SIZE, HOVER_TEXT_COLOR, 
+    LINE_WIDTH, GRAPH_HEIGHT,
+    BAR_TEXT_FORMAT, PERCENTAGE_FORMAT
+)
 from utils import format_date, apply_figure_template, clean_ticker, clean_ticker_series
 
 @apply_figure_template
@@ -23,22 +29,20 @@ def plot_return_analysis(all_data, periods=20):
     hisseler = clean_ticker_series(momentum.index)
     degerler = momentum.values * 100  # Yüzde olarak göster
     
-    # Renkler için - styles.css ile uyumlu
-    renk_skala = [DOWN_COLOR, '#ff9999', '#ffffff', '#99d98c', UP_COLOR]
-    
+    # Renk skalası - theme_constants'tan al
     fig = px.bar(
         x=hisseler,
         y=degerler,
         title=f"En Fazla Yükselen/Düşen Hisseler - {format_date(first_date)} ile {format_date(last_date)} arası",
         labels={'x': 'Hisseler', 'y': 'Getiri (%)'},
         color=degerler,
-        color_continuous_scale=renk_skala,
-        text=[f"{val:.1f}%" for val in degerler]
+        color_continuous_scale=RETURN_COLOR_SCALE,
+        text=[PERCENTAGE_FORMAT.format(val) for val in degerler]
     )
     
     fig.update_traces(
         textposition='outside',
-        textfont=dict(size=9, color="#333"),
+        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
         hovertemplate='<b>%{x}</b>: %{y:.2f}%<extra></extra>'
     )
     
@@ -76,9 +80,7 @@ def plot_volatility_vs_return(cv_data, all_data, periods=20):
     })
     df['Hisse'] = clean_ticker_series(df.index)
     
-    # Renk skalası - styles.css ile uyumlu
-    renk_skala = [DOWN_COLOR, '#ff9999', '#ffffff', '#99d98c', UP_COLOR]
-    
+    # Renk skalası - theme_constants'tan al
     fig = px.scatter(
         df, 
         x='Oynaklık', 
@@ -87,7 +89,7 @@ def plot_volatility_vs_return(cv_data, all_data, periods=20):
         title=f"Oynaklık vs Getiri - {format_date(first_date)} ile {format_date(last_date)} arası",
         color='Getiri (%)',
         size=abs(df['Getiri (%)']).clip(1, 20),  # Değişim miktarına göre boyutlandır
-        color_continuous_scale=renk_skala,
+        color_continuous_scale=RETURN_COLOR_SCALE,
         hover_data={
             'Oynaklık': ':.4f',
             'Getiri (%)': ':.2f',
@@ -98,7 +100,7 @@ def plot_volatility_vs_return(cv_data, all_data, periods=20):
     fig.update_traces(
         textposition='top center',
         marker=dict(line=dict(width=1, color='#DDD')),
-        textfont=dict(size=9, color="#333"),
+        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
     )
     
     # Eksen çizgileri
@@ -131,9 +133,6 @@ def plot_sharpe_ratio(cv_data, all_data, periods=20):
     # Sharpe benzeri oran
     sharpe_like = (returns_last_n / cv_last).sort_values(ascending=False)
     
-    # Renk skalası - styles.css ile uyumlu
-    renk_skala = [DOWN_COLOR, '#ff9999', '#ffffff', '#99d98c', UP_COLOR]
-    
     # Hisse kodlarını kısalt
     hisseler = clean_ticker_series(sharpe_like.index)
     degerler = sharpe_like.values
@@ -144,13 +143,13 @@ def plot_sharpe_ratio(cv_data, all_data, periods=20):
         title=f"Riske Göre Düzeltilmiş Performans - {format_date(first_date)} ile {format_date(last_date)} arası",
         labels={'x': 'Hisseler', 'y': 'Getiri/Oynaklık Oranı'},
         color=degerler,
-        color_continuous_scale=renk_skala,
-        text=[f"{val:.2f}" for val in degerler]
+        color_continuous_scale=RETURN_COLOR_SCALE,
+        text=[BAR_TEXT_FORMAT.format(val) for val in degerler]
     )
     
     fig.update_traces(
         textposition='outside',
-        textfont=dict(size=9, color="#333"),
+        textfont=dict(size=TEXT_FONT_SIZE, color=HOVER_TEXT_COLOR),
         hovertemplate='<b>%{x}</b>: %{y:.4f}<extra></extra>'
     )
     
@@ -200,7 +199,7 @@ def plot_price_drawdown(stock_data, ticker):
             x=df.index,
             y=df['Close'],
             name='Fiyat',
-            line=dict(color=NEUTRAL_COLOR, width=2),
+            line=dict(color=NEUTRAL_COLOR, width=LINE_WIDTH),
             hovertemplate='%{y:.2f}<br>%{x|%d.%m.%Y}<extra></extra>'
         ),
         row=1, col=1
@@ -235,7 +234,7 @@ def plot_price_drawdown(stock_data, ticker):
     # Grafik başlığı ve boyutu
     fig.update_layout(
         title=f"{clean_ticker_name} Zirveden Uzaklık Analizi - {format_date(first_date)} ile {format_date(last_date)} arası",
-        height=550
+        height=GRAPH_HEIGHT
     )
     
     # En büyük düşüş miktarı

@@ -40,17 +40,25 @@ if st.session_state.prev_window_size != window_size:
 if refresh_btn:
     st.session_state.refresh_data = True
 
-# Veri yükleme fonksiyonu
+# Veri yükleme fonksiyonları
 @st.cache_data(ttl=3600)  # 1 saat cache
-def load_data(tickers, days, window=20):
-    with st.spinner('Veriler yükleniyor... Lütfen bekleyin'):
-        data = get_stock_data(tickers, days)
-        vol_data = calculate_volatility(data, window=window)
-        return data, vol_data
+def fetch_stock_data(tickers, days):
+    """Hisse senedi verilerini yükle"""
+    with st.spinner('Hisse senedi fiyat verileri yükleniyor... Lütfen bekleyin'):
+        return get_stock_data(tickers, days)
+
+@st.cache_data(ttl=3600)  # 1 saat cache
+def compute_volatility(data, window):
+    """Varyasyon katsayısını hesapla"""
+    with st.spinner('Oynaklık hesaplanıyor... Lütfen bekleyin'):
+        return calculate_volatility(data, window=window)
 
 # Veri yükleme işlemi
 if 'data' not in st.session_state or 'refresh_data' in st.session_state:
-    st.session_state.data, st.session_state.vol_data = load_data(selected_tickers, data_days, window=window_size)
+    # Veri yüklemesini iki aşamaya bölerek önbellekleme etkinliğini artır
+    st.session_state.data = fetch_stock_data(selected_tickers, data_days)
+    st.session_state.vol_data = compute_volatility(st.session_state.data, window_size)
+    
     if 'refresh_data' in st.session_state:
         del st.session_state.refresh_data
         st.success("✅ Veriler başarıyla güncellendi!")
