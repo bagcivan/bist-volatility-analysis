@@ -1,0 +1,395 @@
+/* Ana tema renkleri */
+:root {
+    --main-color: #3a86ff;
+    --accent-color: #8338ec;
+    --positive-color: #02c076;
+    --positive-gradient: linear-gradient(135deg, #02c076, #00a86b);
+    --positive-light: rgba(2, 192, 118, 0.1);
+    --negative-color: #dc3545;
+    --negative-gradient: linear-gradient(135deg, #dc3545, #c71f2d);
+    --negative-light: rgba(220, 53, 69, 0.1);
+    --neutral-bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --neutral-gray: #adb5bd;
+    --text-muted: #666;
+}
+
+/* Header stillemesi */
+.main-header {
+    font-size: 1.8rem !important;
+    font-weight: 600 !important;
+    color: var(--main-color) !important;
+    margin-bottom: 0.3rem !important;
+    margin-top: 0 !important;
+    padding-top: 0 !important;
+}
+
+.sub-header {
+    font-size: 1.4rem !important;
+    font-weight: 500 !important;
+    color: #444 !important;
+    margin-top: 0.7rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Sidebar bileşenleri */
+.sidebar-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.sidebar-title {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0 !important;
+    color: var(--main-color) !important;
+}
+
+.sidebar-description {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    margin-top: 0.3rem;
+}
+
+.sidebar-subtitle {
+    font-size: 0.9rem !important;
+    font-weight: 500 !important;
+    color: #666 !important;
+    margin-top: 1rem !important;
+    margin-bottom: 0.5rem !important;
+}
+
+.sidebar-divider {
+    margin: 1rem 0;
+    border: none;
+    border-top: 1px solid #eee;
+}
+
+.button-container {
+    margin-top: 1rem;
+}
+
+/* İlerleme barı stilleri */
+.progress-container {
+    margin-bottom: 15px;
+    margin-top: 0;
+}
+
+.progress-bar-wrapper {
+    display: flex;
+    align-items: center;
+    margin-bottom: 5px;
+}
+
+.progress-bar {
+    flex-grow: 1;
+    height: 26px;
+    display: flex;
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.progress-segment {
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-weight: bold;
+    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+.progress-segment-positive {
+    background: var(--positive-gradient);
+}
+
+.progress-segment-neutral {
+    background-color: var(--neutral-gray);
+}
+
+.progress-segment-negative {
+    background: var(--negative-gradient);
+}
+
+.progress-legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+}
+
+.legend-color-positive {
+    color: var(--positive-color);
+    font-weight: 600;
+}
+
+.legend-color-neutral {
+    color: var(--neutral-gray);
+    font-weight: 600;
+}
+
+.legend-color-negative {
+    color: var(--negative-color);
+    font-weight: 600;
+}
+
+/* Metrik kartları için stiller */
+.metric-card {
+    padding: 0.6rem !important;
+    margin-bottom: 0.6rem !important;
+}
+
+.metric-subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* Kart stillemesi */
+.stCard {
+    border-radius: 10px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+    padding: 0.8rem !important;
+    margin-bottom: 0.8rem !important;
+    background-color: var(--card-bg) !important;
+}
+
+/* Streamlit bileşenlerinin genel stillemesi */
+div.stButton > button {
+    background-color: var(--main-color);
+    color: white;
+    border-radius: 5px;
+    border: none;
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+}
+
+div.stButton > button:hover {
+    background-color: var(--accent-color);
+    border: none;
+}
+
+.stSlider > div {
+    color: var(--main-color) !important;
+}
+
+/* Bilgi mesajları */
+.info-box {
+    padding: 0.75rem !important;
+    border-radius: 5px !important;
+    background-color: rgba(58, 134, 255, 0.1) !important;
+    border-left: 3px solid var(--main-color) !important;
+    margin: 0.5rem 0 1rem 0 !important;
+    font-size: 0.9rem !important;
+}
+
+/* Metrikler için stil */
+.metric-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.8rem;
+    background-color: var(--card-bg);
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 0.8rem;
+}
+
+.metric-value {
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+}
+
+.metric-label {
+    font-size: 0.9rem !important;
+    color: #666;
+}
+
+.positive {
+    color: var(--positive-color) !important;
+    font-weight: 600 !important;
+}
+
+.negative {
+    color: var(--negative-color) !important;
+    font-weight: 600 !important;
+}
+
+/* Yükseliş/düşüş stilleri */
+.rising-bg {
+    background: var(--positive-gradient) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.falling-bg {
+    background: var(--negative-gradient) !important;
+    color: white !important;
+    font-weight: 600 !important;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1) !important;
+}
+
+.rising-text {
+    color: var(--positive-color) !important;
+    font-weight: 600 !important;
+}
+
+.falling-text {
+    color: var(--negative-color) !important;
+    font-weight: 600 !important;
+}
+
+/* Liste başlıkları */
+.list-title {
+    font-weight: 500;
+    margin: 0;
+    padding: 0;
+    font-size: 0.95rem;
+}
+
+.list-title-positive {
+    color: var(--positive-color);
+}
+
+.list-title-negative {
+    color: var(--negative-color);
+}
+
+/* Son güncelleme bilgisi */
+.last-update {
+    position: absolute;
+    top: 0.5rem;
+    right: 1rem;
+    font-size: 0.75rem;
+    color: #888;
+}
+
+/* Tablo içindeki değerler için özel stiller */
+.dataframe-value-positive {
+    color: var(--positive-color) !important;
+    background-color: var(--positive-light) !important;
+    font-weight: 600 !important;
+    border-radius: 3px !important;
+    padding: 2px 4px !important;
+}
+
+.dataframe-value-negative {
+    color: var(--negative-color) !important;
+    background-color: var(--negative-light) !important;
+    font-weight: 600 !important;
+    border-radius: 3px !important;
+    padding: 2px 4px !important;
+}
+
+/* DataFrame styling */
+.dataframe {
+    border-collapse: separate !important;
+    border-spacing: 0 !important;
+    border: none !important;
+    width: 100% !important;
+}
+
+.dataframe th {
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    padding: 0.5rem !important;
+    background-color: #f8f9fa !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    color: #555 !important;
+    border-top: none !important;
+    border-right: none !important;
+    border-left: none !important;
+}
+
+.dataframe td {
+    padding: 0.5rem !important;
+    border: none !important;
+    border-bottom: 1px solid #f1f1f1 !important;
+    font-size: 0.9rem !important;
+    color: #333 !important;
+}
+
+.dataframe tbody tr:hover {
+    background-color: #f8f9fa !important;
+}
+
+/* Ana içerik bölgesi */
+.main-container {
+    padding: 0 1rem;
+}
+
+/* Streamlit elemanlardaki espacios */
+div.block-container {
+    padding-top: 1rem !important;
+    padding-bottom: 1rem !important;
+    margin-top: 0 !important;
+}
+
+header {
+    visibility: hidden !important;
+    height: 0 !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+section[data-testid="stSidebar"] > div {
+    padding-top: 2rem !important;
+}
+
+.stTabs [data-baseweb="tab-list"] {
+    margin-top: 0 !important;
+    margin-bottom: 0.5rem !important;
+    gap: 1px !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    padding-top: 0.25rem !important;
+    padding-bottom: 0.25rem !important;
+}
+
+/* Footer */
+.footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+    font-size: 0.8rem;
+    color: #888;
+}
+
+/* Tooltips */
+.tooltip {
+    position: relative;
+    display: inline-block;
+    cursor: help;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: 120px;
+    background-color: #555;
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%;
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+    opacity: 1;
+} 
